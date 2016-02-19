@@ -1,0 +1,5 @@
+iterative Koch curve implementation
+
+compiling: make
+running: ./koch <iter>
+cleaning up: make clean
