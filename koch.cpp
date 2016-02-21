@@ -18,6 +18,9 @@ struct point {
     float x, y;
     point() { x = 0; y = 0; }
     point(float x_, float y_) { x = x_; y = y_; }
+    void operator=(const point &p) { x = p.x; y = p.y; }
+    bool operator==(const point &p) { return x == p.x && y == p.y; }
+    bool operator!=(const point &p) { return x != p.x || y != p.y; }
 };
 
 // globals
@@ -82,19 +85,33 @@ next_seg(point &p, point &q, point &out1, point &out2, point &out3) {
 }
 
 vector<point>
-next(vector<point> &koch) {
+koch_direct(uint n) {
     vector<point> result;
 
-    for (uint i = 0; i < koch.size() - 1; i += 1) {
-        result.push_back(koch[i]);
-        point out1, out2, out3;
-        next_seg(koch[i], koch[i+1], out1, out2, out3);
-        result.push_back(out1);
-        result.push_back(out2);
-        result.push_back(out3);
-    }
+    uint size = 2;
+    for (uint i = 0; i < n; i++)
+        size = 4*size - 3;
 
-    result.push_back(koch[koch.size()-1]);
+    result.resize(size);
+
+    result[0].x = 0; result[0].y = 0;
+    result[size-1].x = 81; result[size-1].y = 0;
+
+    uint step_size = size - 1;
+
+    while (step_size > 1) {
+        for (uint i = 0; i + step_size < size ; i += step_size) {
+            uint left = i, right = left + step_size;
+
+            uint mid = (left + right) / 2;
+            uint leftmid = (left + mid) / 2;
+            uint rightmid = (mid + right) / 2;
+
+            next_seg(result[left], result[right],
+                     result[leftmid], result[mid], result[rightmid]);
+        }
+        step_size /= 4;
+    }
 
     return result;
 }
@@ -108,12 +125,7 @@ main(int argc, char **argv) {
 
     int max_iter = atoi(argv[1]);
 
-    point p, q(81, 0);
-    koch.push_back(p);
-    koch.push_back(q);
-
-    while (max_iter--)
-        koch = next(koch);
+    koch = koch_direct(max_iter);
 
     // determine scale for rendering
     for (uint i = 0; i < koch.size(); i++) {
@@ -122,8 +134,11 @@ main(int argc, char **argv) {
         if (y > render_scale) render_scale = y;
     }
 
+    cout << "rendering " << koch.size() << " points" << endl;
+
     glutInit(&argc, argv);
-    glutInitWindowSize(960, 960);
+    glutInitWindowSize(1000, 1000);
+    glutInitWindowPosition(400, 0);
     window = glutCreateWindow("Koch");
     glutDisplayFunc(display);
     glutKeyboardFunc(keyboard);
